@@ -17,11 +17,11 @@ REGISTER_RESPONSE=$(curl -s -X POST "$API_URL/users" \
 
 USER_ID=$(echo "$REGISTER_RESPONSE" | jq -r '.id // .userId // .user_id')
 if [[ "$USER_ID" == "null" || -z "$USER_ID" ]]; then
-  echo "❌ User registration failed. Response:"
+  echo "FAIL User registration failed. Response:"
   echo "$REGISTER_RESPONSE"
   exit 1
 else
-  echo "✅ User registered with ID: $USER_ID"
+  echo "PASS User registered with ID: $USER_ID"
 fi
 
 # 2. Try to register with the same email (should fail)
@@ -29,9 +29,9 @@ DUPLICATE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/users"
   -H "Content-Type: application/json" \
   -d "{\"name\":\"Test User 2\",\"email\":\"$USER_EMAIL\",\"password\":\"anotherpass\"}")
 if [[ "$DUPLICATE_CODE" == "409" ]]; then
-  echo "✅ Duplicate email registration correctly rejected."
+  echo "PASS Duplicate email registration correctly rejected."
 else
-  echo "❌ Duplicate email registration was not rejected!"
+  echo "FAIL Duplicate email registration was not rejected!"
   exit 1
 fi
 
@@ -49,9 +49,9 @@ ADMIN_USER=$(curl -s -X GET "$API_URL/users/$ADMIN_ID" \
   -H "Authorization: Bearer $ADMIN_TOKEN")
 IS_ADMIN=$(echo "$ADMIN_USER" | jq -r '.admin')
 if [[ "$IS_ADMIN" == "false" ]]; then
-  echo "✅ Admin flag cannot be set by user registration."
+  echo "PASS Admin flag cannot be set by user registration."
 else
-  echo "❌ Admin flag was set by user registration!"
+  echo "FAIL Admin flag was set by user registration!"
   exit 1
 fi
 
@@ -63,11 +63,11 @@ LOGIN_RESPONSE=$(curl -s -X POST "$API_URL/users/login" \
   -d "{\"email\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}")
 USER_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token')
 if [[ "$USER_TOKEN" == "null" || -z "$USER_TOKEN" ]]; then
-  echo "❌ User login failed. Response:"
+  echo "FAIL User login failed. Response:"
   echo "$LOGIN_RESPONSE"
   exit 1
 else
-  echo "✅ User login succeeded and token received."
+  echo "PASS User login succeeded and token received."
 fi
 
 # 5. Login with wrong password (should fail)
@@ -75,9 +75,9 @@ LOGIN_FAIL_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/users
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$USER_EMAIL\",\"password\":\"wrongpass\"}")
 if [[ "$LOGIN_FAIL_CODE" == "401" ]]; then
-  echo "✅ Login with wrong password correctly rejected."
+  echo "PASS Login with wrong password correctly rejected."
 else
-  echo "❌ Login with wrong password was not rejected!"
+  echo "FAIL Login with wrong password was not rejected!"
   exit 1
 fi
 
@@ -88,18 +88,18 @@ USER_RESPONSE=$(curl -s -X GET "$API_URL/users/$USER_ID" \
   -H "Authorization: Bearer $USER_TOKEN")
 HAS_PASSWORD=$(echo "$USER_RESPONSE" | jq 'has("password")')
 if [[ "$HAS_PASSWORD" == "false" ]]; then
-  echo "✅ User data does not include password."
+  echo "PASS User data does not include password."
 else
-  echo "❌ User data should not include password!"
+  echo "FAIL User data should not include password!"
   exit 1
 fi
 
 # 7. Try to get user info without token (should fail)
 NOAUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$API_URL/users/$USER_ID")
 if [[ "$NOAUTH_CODE" == "401" || "$NOAUTH_CODE" == "403" ]]; then
-  echo "✅ Unauthorized user data access correctly rejected."
+  echo "PASS Unauthorized user data access correctly rejected."
 else
-  echo "❌ Unauthorized user data access was not rejected!"
+  echo "FAIL Unauthorized user data access was not rejected!"
   exit 1
 fi
 
@@ -118,9 +118,9 @@ USER2_TOKEN=$(echo "$USER2_LOGIN" | jq -r '.token')
 CROSS_ACCESS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$API_URL/users/$USER_ID" \
   -H "Authorization: Bearer $USER2_TOKEN")
 if [[ "$CROSS_ACCESS_CODE" == "401" || "$CROSS_ACCESS_CODE" == "403" ]]; then
-  echo "✅ User cannot access another user's data."
+  echo "PASS User cannot access another user's data."
 else
-  echo "❌ User was able to access another user's data!"
+  echo "FAIL User was able to access another user's data!"
   exit 1
 fi
 
@@ -147,9 +147,9 @@ CREATE_BUSINESS_RESPONSE=$(curl -s -X POST "$API_URL/businesses" \
   -d "{\"ownerId\":$BUSINESS_USER_ID,\"name\":\"Test Biz\",\"address\":\"123 Main\",\"city\":\"Corvallis\",\"state\":\"OR\",\"zip\":\"97330\",\"phone\":\"555-555-5555\",\"category\":\"Food\",\"subcategory\":\"Cafe\"}")
 BUSINESS_ID=$(echo "$CREATE_BUSINESS_RESPONSE" | jq -r '.id')
 if [[ "$BUSINESS_ID" != "null" && "$BUSINESS_ID" != "" ]]; then
-  echo "✅ User can create their own business."
+  echo "PASS User can create their own business."
 else
-  echo "❌ User could not create their own business!"
+  echo "FAIL User could not create their own business!"
   exit 1
 fi
 
@@ -159,9 +159,9 @@ CREATE_OTHER_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL
   -H "Content-Type: application/json" \
   -d "{\"ownerId\":999999,\"name\":\"Hacker Biz\",\"address\":\"123 Main\",\"city\":\"Corvallis\",\"state\":\"OR\",\"zip\":\"97330\",\"phone\":\"555-555-5555\",\"category\":\"Food\",\"subcategory\":\"Cafe\"}")
 if [[ "$CREATE_OTHER_RESPONSE" == "403" ]]; then
-  echo "✅ User cannot create a business for another user."
+  echo "PASS User cannot create a business for another user."
 else
-  echo "❌ User was able to create a business for another user!"
+  echo "FAIL User was able to create a business for another user!"
   exit 1
 fi
 
@@ -171,9 +171,9 @@ UPDATE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$API_URL/busine
   -H "Content-Type: application/json" \
   -d "{\"name\":\"Updated Biz\"}")
 if [[ "$UPDATE_RESPONSE" == "200" ]]; then
-  echo "✅ User can update their own business."
+  echo "PASS User can update their own business."
 else
-  echo "❌ User could not update their own business!"
+  echo "FAIL User could not update their own business!"
   exit 1
 fi
 
@@ -181,9 +181,9 @@ fi
 DELETE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_URL/businesses/$BUSINESS_ID" \
   -H "Authorization: Bearer $BUSINESS_USER_TOKEN")
 if [[ "$DELETE_RESPONSE" == "204" ]]; then
-  echo "✅ User can delete their own business."
+  echo "PASS User can delete their own business."
 else
-  echo "❌ User could not delete their own business!"
+  echo "FAIL User could not delete their own business!"
   exit 1
 fi
 
@@ -209,9 +209,9 @@ CREATE_PHOTO_RESPONSE=$(curl -s -X POST "$API_URL/photos" \
   -d "{\"userId\":$PHOTO_USER_ID,\"caption\":\"Test Photo\",\"businessId\":1}")
 PHOTO_ID=$(echo "$CREATE_PHOTO_RESPONSE" | jq -r '.id')
 if [[ "$PHOTO_ID" != "null" && "$PHOTO_ID" != "" ]]; then
-  echo "✅ User can create their own photo."
+  echo "PASS User can create their own photo."
 else
-  echo "❌ User could not create their own photo!"
+  echo "FAIL User could not create their own photo!"
   exit 1
 fi
 
@@ -221,9 +221,9 @@ CREATE_OTHER_PHOTO_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$A
   -H "Content-Type: application/json" \
   -d "{\"userId\":999999,\"caption\":\"Hacker Photo\",\"businessId\":1}")
 if [[ "$CREATE_OTHER_PHOTO_RESPONSE" == "403" ]]; then
-  echo "✅ User cannot create a photo for another user."
+  echo "PASS User cannot create a photo for another user."
 else
-  echo "❌ User was able to create a photo for another user!"
+  echo "FAIL User was able to create a photo for another user!"
   exit 1
 fi
 
@@ -233,9 +233,9 @@ UPDATE_PHOTO_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$API_URL/
   -H "Content-Type: application/json" \
   -d "{\"caption\":\"Updated Photo\"}")
 if [[ "$UPDATE_PHOTO_RESPONSE" == "200" ]]; then
-  echo "✅ User can update their own photo."
+  echo "PASS User can update their own photo."
 else
-  echo "❌ User could not update their own photo!"
+  echo "FAIL User could not update their own photo!"
   exit 1
 fi
 
@@ -243,9 +243,9 @@ fi
 DELETE_PHOTO_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_URL/photos/$PHOTO_ID" \
   -H "Authorization: Bearer $PHOTO_USER_TOKEN")
 if [[ "$DELETE_PHOTO_RESPONSE" == "204" ]]; then
-  echo "✅ User can delete their own photo."
+  echo "PASS User can delete their own photo."
 else
-  echo "❌ User could not delete their own photo!"
+  echo "FAIL User could not delete their own photo!"
   exit 1
 fi
 
@@ -272,9 +272,9 @@ CREATE_REVIEW_RESPONSE=$(curl -s -X POST "$API_URL/reviews" \
   -d "{\"userId\":$REVIEW_USER_ID,\"businessId\":1,\"dollars\":2,\"stars\":4,\"review\":\"Test review\"}")
 REVIEW_ID=$(echo "$CREATE_REVIEW_RESPONSE" | jq -r '.id')
 if [[ "$REVIEW_ID" != "null" && "$REVIEW_ID" != "" ]]; then
-  echo "✅ User can create their own review."
+  echo "PASS User can create their own review."
 else
-  echo "❌ User could not create their own review!"
+  echo "FAIL User could not create their own review!"
   exit 1
 fi
 
@@ -284,9 +284,9 @@ CREATE_OTHER_REVIEW_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$
   -H "Content-Type: application/json" \
   -d "{\"userId\":999999,\"businessId\":1,\"dollars\":2,\"stars\":4,\"review\":\"Hacker review\"}")
 if [[ "$CREATE_OTHER_REVIEW_RESPONSE" == "403" ]]; then
-  echo "✅ User cannot create a review for another user."
+  echo "PASS User cannot create a review for another user."
 else
-  echo "❌ User was able to create a review for another user!"
+  echo "FAIL User was able to create a review for another user!"
   exit 1
 fi
 
@@ -296,9 +296,9 @@ UPDATE_REVIEW_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$API_URL
   -H "Content-Type: application/json" \
   -d "{\"review\":\"Updated review\"}")
 if [[ "$UPDATE_REVIEW_RESPONSE" == "200" ]]; then
-  echo "✅ User can update their own review."
+  echo "PASS User can update their own review."
 else
-  echo "❌ User could not update their own review!"
+  echo "FAIL User could not update their own review!"
   exit 1
 fi
 
@@ -306,8 +306,8 @@ fi
 DELETE_REVIEW_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_URL/reviews/$REVIEW_ID" \
   -H "Authorization: Bearer $REVIEW_USER_TOKEN")
 if [[ "$DELETE_REVIEW_RESPONSE" == "204" ]]; then
-  echo "✅ User can delete their own review."
+  echo "PASS User can delete their own review."
 else
-  echo "❌ User could not delete their own review!"
+  echo "FAIL User could not delete their own review!"
   exit 1
 fi

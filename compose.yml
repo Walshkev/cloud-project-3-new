@@ -11,12 +11,19 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   db-init:
     build: .
-    command: ["/usr/src/app/wait-for-it.sh", "db:3306", "--timeout=60", "--", "npm", "run", "initdb"]
+    command: ["npm", "run", "initdb"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       MYSQL_DB_NAME: ${MYSQL_DB_NAME}
       MYSQL_USER: ${MYSQL_USER}
@@ -26,9 +33,10 @@ services:
 
   api:
     build: .
-    command: ["/usr/src/app/wait-for-it.sh", "db:3306", "--timeout=60", "--", "npm", "start"]
+    command: ["npm", "start"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       MYSQL_DB_NAME: ${MYSQL_DB_NAME}
       MYSQL_USER: ${MYSQL_USER}

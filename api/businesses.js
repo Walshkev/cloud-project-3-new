@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { Business, BusinessClientFields } = require('../models/business')
 const { requireAuth } = require('./auth')
-const { User } = require('../models/user')
+// const { User } = require('../models/user')
 
 const router = Router()
 
